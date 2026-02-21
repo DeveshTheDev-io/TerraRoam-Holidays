@@ -1,0 +1,187 @@
+:root {
+  /* Indian Tourism Color Palette */
+  --color-saffron: #ff9933;
+  --color-emerald: #138808;
+  --color-navy: #000080;
+  --color-marigold: #ffc000;
+  --color-royal-purple: #4b0082;
+  --color-crimson: #dc143c;
+
+  --bg-dark: #0a0a0f;
+  --text-light: #f5f5f7;
+  --text-dim: #c1c1c1;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Outfit", sans-serif;
+  color: var(--text-light);
+  background-color: var(--bg-dark);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fluid Background Animation */
+.fluid-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background: var(--bg-dark);
+  overflow: hidden;
+}
+
+.fluid-bg::before,
+.fluid-bg::after {
+  content: "";
+  position: absolute;
+  width: 150vmax;
+  height: 150vmax;
+  opacity: 0.6;
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  animation: blob-spin 25s infinite linear;
+  filter: blur(80px);
+}
+
+.fluid-bg::before {
+  top: -50%;
+  left: -20%;
+  background: radial-gradient(
+    circle at center,
+    var(--color-saffron) 0%,
+    transparent 60%
+  );
+  animation-duration: 35s;
+  animation-direction: alternate;
+}
+
+.fluid-bg::after {
+  bottom: -40%;
+  right: -20%;
+  background: radial-gradient(
+    circle at center,
+    var(--color-navy) 0%,
+    transparent 60%
+  );
+  animation-duration: 28s;
+  animation-delay: -5s;
+}
+
+.fluid-blob-3 {
+  position: absolute;
+  top: 40%;
+  left: 40%;
+  width: 100vmax;
+  height: 100vmax;
+  opacity: 0.4;
+  border-radius: 60% 40% 30% 70% / 50% 40% 60% 50%;
+  background: radial-gradient(
+    circle at center,
+    var(--color-emerald) 0%,
+    transparent 60%
+  );
+  animation: blob-spin 20s infinite linear reverse;
+  filter: blur(100px);
+}
+
+@keyframes blob-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  border-radius: 24px;
+}
+
+.glass-nav {
+  background: rgba(10, 10, 15, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-button {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0)
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  color: white;
+  padding: 12px 28px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-family: "Outfit", sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: all 0.5s ease;
+}
+
+.glass-button:hover::before {
+  left: 100%;
+}
+
+.glass-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 153, 51, 0.3); /* Saffron glow */
+  border-color: rgba(255, 153, 51, 0.4);
+}
+
+/* Typhography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #ff9933, #ffc000);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

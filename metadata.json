@@ -1,7 +1,0 @@
-{
-  "name": "TerraRoam Holidays",
-  "description": "A high-end, modern Indian travel and tourism platform featuring glassmorphism, 3D parallax effects, and AI-powered custom itinerary generation for every age group.",
-  "requestFramePermissions": [
-    "geolocation"
-  ]
-}
