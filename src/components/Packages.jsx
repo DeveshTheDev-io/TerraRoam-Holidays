@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreativePricing } from './ui/creative-pricing';
 import { Sparkles, Map, Mountain, Sunrise } from 'lucide-react';
-import FAQ from './FAQ';
 
 const Packages = () => {
   const navigate = useNavigate();
@@ -114,7 +113,6 @@ const Packages = () => {
           </button>
         </div>
       </div>
-      <FAQ />
     </>
   );
 };

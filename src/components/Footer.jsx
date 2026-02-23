@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, Globe } from "lucide-react";
 import { TextHoverEffect, FooterBackgroundGradient } from './ui/hover-footer';
 
@@ -27,9 +28,9 @@ const Footer = () => {
     {
         title: "Company",
         links: [
-          { label: "About Us", href: "#" },
-          { label: "Privacy Policy", href: "#" },
-          { label: "Terms of Service", href: "#" },
+          { label: "About Us", href: "/about" },
+          { label: "Privacy Policy", href: "/privacy" },
+          { label: "Terms of Service", href: "/terms" },
         ],
       }
   ];
@@ -99,14 +100,25 @@ const Footer = () => {
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {section.links.map((link) => (
                   <li key={link.label} style={{ position: 'relative' }}>
-                    <a
-                      href={link.href}
-                      style={{ color: 'var(--text-dim)', textDecoration: 'none', transition: 'color 0.3s' }}
-                      onMouseEnter={(e) => e.target.style.color = 'var(--color-saffron)'}
-                      onMouseLeave={(e) => e.target.style.color = 'var(--text-dim)'}
-                    >
-                      {link.label}
-                    </a>
+                    {link.href.startsWith('/') ? (
+                      <Link
+                        to={link.href}
+                        style={{ color: 'var(--text-dim)', textDecoration: 'none', transition: 'color 0.3s' }}
+                        onMouseEnter={(e) => e.target.style.color = 'var(--color-saffron)'}
+                        onMouseLeave={(e) => e.target.style.color = 'var(--text-dim)'}
+                      >
+                        {link.label}
+                      </Link>
+                    ) : (
+                      <a
+                        href={link.href}
+                        style={{ color: 'var(--text-dim)', textDecoration: 'none', transition: 'color 0.3s' }}
+                        onMouseEnter={(e) => e.target.style.color = 'var(--color-saffron)'}
+                        onMouseLeave={(e) => e.target.style.color = 'var(--text-dim)'}
+                      >
+                        {link.label}
+                      </a>
+                    )}
                     {link.pulse && (
                       <span style={{ 
                         position: 'absolute', 

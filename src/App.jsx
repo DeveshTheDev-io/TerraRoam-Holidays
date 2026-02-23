@@ -10,6 +10,11 @@ import AdminDashboard from './components/AdminDashboard';
 import Auth from './pages/Auth';
 import PackagesPage from './pages/PackagesPage';
 import ShaderBanner from './components/ShaderBanner';
+import FloatingPlacesBackground from './components/FloatingPlacesBackground';
+import FAQ from './components/FAQ';
+import AboutUs from './pages/AboutUs';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 function App() {
   return (
@@ -26,18 +31,26 @@ function App() {
             <Route path="/" element={
               <>
                 <Hero />
-                <ShaderBanner />
-                <Destinations />
-                <Packages />
+                <div style={{ position: 'relative', overflow: 'hidden' }}>
+                  <FloatingPlacesBackground />
+                  <div style={{ position: 'relative', zIndex: 1 }}>
+                    <ShaderBanner />
+                    <Destinations />
+                    <Packages />
+                    <FAQ />
+                    <Footer />
+                  </div>
+                </div>
               </>
             } />
             <Route path="/auth" element={<Auth />} />
             <Route path="/packages" element={<PackagesPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
           </Routes>
         </main>
-
-        <Footer />
       </div>
     </>
   );

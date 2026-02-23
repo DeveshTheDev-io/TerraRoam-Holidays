@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
 
 const AdminDashboard = () => {
   const { users, bookings, packages, currentUser, logout, updateBookingStatus, addPackage, deletePackage, toggleFeaturedPackage, updatePackage, destinations, addDestination, updateDestination, deleteDestination } = useAppContext();
@@ -8,6 +9,30 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('bookings');
   const [editingPkg, setEditingPkg] = useState(null);
   const [editingDest, setEditingDest] = useState(null);
+  const [addingPkg, setAddingPkg] = useState(false);
+  const [addingDest, setAddingDest] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const uploadImageToSupabase = async (file) => {
+    if (!file) return null;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+    
+    setIsUploading(true);
+    try {
+      const { data, error } = await supabase.storage.from('images').upload(filePath, file);
+      if (error) {
+        console.error('Error uploading image:', error);
+        alert('Error uploading image');
+        return null;
+      }
+      const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(filePath);
+      return publicUrlData.publicUrl;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // If not admin, block access
   if (!currentUser || currentUser.role !== 'admin') {
@@ -174,12 +199,7 @@ const AdminDashboard = () => {
           <div className="glass-panel" style={{ padding: '30px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ fontSize: '1.8rem', margin: 0 }}>Available Packages</h2>
-              <button onClick={() => {
-                const title = prompt("Package Name (e.g. Desert Safari):");
-                if (title) {
-                  addPackage({ title, duration: '3 Days / 2 Nights', price: 9999, route: 'Local', featured: false, description: 'Brand new package added by Admin.', image: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=600' });
-                }
-              }} className="glass-button" style={{ padding: '8px 15px', fontSize: '0.9rem' }}>+ Add Package</button>
+              <button onClick={() => setAddingPkg(true)} className="glass-button" style={{ padding: '8px 15px', fontSize: '0.9rem' }}>+ Add Package</button>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -223,18 +243,7 @@ const AdminDashboard = () => {
           <div className="glass-panel" style={{ padding: '30px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ fontSize: '1.8rem', margin: 0 }}>Top Destinations</h2>
-              <button onClick={() => {
-                const name = prompt("Destination Name:");
-                if (name) {
-                  addDestination({ 
-                    name, 
-                    description: 'New destination description...', 
-                    image: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=600', 
-                    tags: ['New'], 
-                    media_slides: [] 
-                  });
-                }
-              }} className="glass-button" style={{ padding: '8px 15px', fontSize: '0.9rem' }}>+ Add Destination</button>
+              <button onClick={() => setAddingDest(true)} className="glass-button" style={{ padding: '8px 15px', fontSize: '0.9rem' }}>+ Add Destination</button>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -271,101 +280,147 @@ const AdminDashboard = () => {
 
       </div>
 
-      {/* Edit Package Modal */}
-      {editingPkg && (
+      {/* Add / Edit Package Modal */}
+      {(editingPkg || addingPkg) && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
         }}>
           <div className="glass-panel" style={{ width: '500px', padding: '30px', position: 'relative' }}>
-            <h2 style={{ marginBottom: '20px' }}>Edit Package</h2>
+            <h2 style={{ marginBottom: '20px' }}>{editingPkg ? 'Edit Package' : 'Add Package'}</h2>
             <form onSubmit={async (e) => {
               e.preventDefault();
               const formData = new FormData(e.target);
-              const updatedData = {
+              
+              let imageUrl = editingPkg ? editingPkg.image : '';
+              const imageFile = formData.get('imageFile');
+              if (imageFile && imageFile.size > 0) {
+                const uploadedUrl = await uploadImageToSupabase(imageFile);
+                if (uploadedUrl) imageUrl = uploadedUrl;
+              }
+
+              const pkgData = {
                 title: formData.get('title'),
                 price: parseFloat(formData.get('price')),
                 duration: formData.get('duration'),
-                description: formData.get('description')
+                description: formData.get('description'),
+                image: imageUrl
               };
-              await updatePackage(editingPkg.id, updatedData);
-              setEditingPkg(null);
+
+              if (editingPkg) {
+                await updatePackage(editingPkg.id, pkgData);
+                setEditingPkg(null);
+              } else {
+                pkgData.featured = false;
+                pkgData.route = 'Local';
+                await addPackage(pkgData);
+                setAddingPkg(false);
+              }
             }} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Title</label>
-                <input name="title" defaultValue={editingPkg.title} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+                <input name="title" defaultValue={editingPkg ? editingPkg.title : ''} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Price (₹)</label>
-                <input name="price" type="number" defaultValue={editingPkg.price} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+                <input name="price" type="number" defaultValue={editingPkg ? editingPkg.price : ''} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Duration (Days/Nights)</label>
-                <input name="duration" defaultValue={editingPkg.duration} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+                <input name="duration" defaultValue={editingPkg ? editingPkg.duration : ''} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Description / Features</label>
-                <textarea name="description" defaultValue={editingPkg.description} rows={4} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px', resize: 'none' }} />
+                <textarea name="description" defaultValue={editingPkg ? editingPkg.description : ''} rows={4} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px', resize: 'none' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Package Image {editingPkg && '(Leave blank to keep current)'}</label>
+                <input name="imageFile" type="file" accept="image/*" required={!editingPkg} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
               </div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <button type="submit" className="glass-button" style={{ flex: 1, background: 'var(--color-emerald)', color: 'white', padding: '12px' }}>Save Changes</button>
-                <button type="button" className="glass-button" onClick={() => setEditingPkg(null)} style={{ flex: 1, background: 'rgba(255,255,255,0.1)', color: 'white', padding: '12px' }}>Cancel</button>
+                <button type="submit" disabled={isUploading} className="glass-button" style={{ flex: 1, background: 'var(--color-emerald)', color: 'white', padding: '12px' }}>{isUploading ? 'Uploading...' : 'Save Changes'}</button>
+                <button type="button" className="glass-button" onClick={() => { setEditingPkg(null); setAddingPkg(false); }} style={{ flex: 1, background: 'rgba(255,255,255,0.1)', color: 'white', padding: '12px' }}>Cancel</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Edit Destination Modal */}
-      {editingDest && (
+      {/* Add / Edit Destination Modal */}
+      {(editingDest || addingDest) && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
         }}>
           <div className="glass-panel" style={{ width: '500px', padding: '30px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ marginBottom: '20px' }}>Edit Destination</h2>
-            <form onSubmit={(e) => {
+            <h2 style={{ marginBottom: '20px' }}>{editingDest ? 'Edit Destination' : 'Add Destination'}</h2>
+            <form onSubmit={async (e) => {
               e.preventDefault();
               const formData = new FormData(e.target);
               const tagsArray = formData.get('tags').split(',').map(t => t.trim()).filter(Boolean);
-              const slidesArray = formData.get('media_slides').split(',').map(s => s.trim()).filter(Boolean);
               
-              const updatedData = {
+              let mainImageUrl = editingDest ? editingDest.image : '';
+              const mainImageFile = formData.get('mainImageFile');
+              if (mainImageFile && mainImageFile.size > 0) {
+                const uploadedUrl = await uploadImageToSupabase(mainImageFile);
+                if (uploadedUrl) mainImageUrl = uploadedUrl;
+              }
+
+              let slidesArray = editingDest && editingDest.media_slides ? [...editingDest.media_slides] : [];
+              const slideFiles = formData.getAll('slideFiles');
+              
+              if (slideFiles && slideFiles.length > 0 && slideFiles[0].size > 0) {
+                setIsUploading(true);
+                const slideUploadPromises = slideFiles.map(file => uploadImageToSupabase(file));
+                const newSlidesUrls = await Promise.all(slideUploadPromises);
+                slidesArray = [...slidesArray, ...newSlidesUrls.filter(url => url !== null)];
+                setIsUploading(false);
+              }
+              
+              const destData = {
                 name: formData.get('name'),
                 description: formData.get('description'),
-                image: formData.get('image'),
                 tags: tagsArray,
+                image: mainImageUrl,
                 media_slides: slidesArray,
               };
-              updateDestination(editingDest.id, updatedData);
-              setEditingDest(null);
+
+              if (editingDest) {
+                await updateDestination(editingDest.id, destData);
+                setEditingDest(null);
+              } else {
+                await addDestination(destData);
+                setAddingDest(false);
+              }
             }} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Name</label>
-                <input name="name" defaultValue={editingDest.name} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+                <input name="name" defaultValue={editingDest ? editingDest.name : ''} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Main Image URL</label>
-                <input name="image" defaultValue={editingDest.image} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Main Image {editingDest && '(Leave blank to keep current)'}</label>
+                <input name="mainImageFile" type="file" accept="image/*" required={!editingDest} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Description</label>
-                <textarea name="description" defaultValue={editingDest.description} rows={3} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px', resize: 'none' }} />
+                <textarea name="description" defaultValue={editingDest ? editingDest.description : ''} rows={3} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px', resize: 'none' }} />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Tags (Comma separated)</label>
-                <input name="tags" defaultValue={(editingDest.tags || []).join(', ')} placeholder="Mountains, Nature" style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+                <input name="tags" defaultValue={editingDest ? (editingDest.tags || []).join(', ') : ''} placeholder="Mountains, Nature" style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Slideshow Media URLs (Comma separated)</label>
-                <textarea name="media_slides" defaultValue={(editingDest.media_slides || []).join(', ')} rows={3} placeholder="https://image1.jpg, https://image2.jpg" style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px', resize: 'none' }} />
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-saffron)', marginTop: '5px' }}>These images/videos will appear in the Discover More popup.</p>
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Add Slideshow Media (Multiple images)</label>
+                <input name="slideFiles" type="file" accept="image/*" multiple style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+                {editingDest && editingDest.media_slides && editingDest.media_slides.length > 0 && (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '5px' }}>Current slides: {editingDest.media_slides.length} media files attached.</p>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <button type="submit" className="glass-button" style={{ flex: 1, background: 'var(--color-emerald)', color: 'white', padding: '12px' }}>Save Changes</button>
-                <button type="button" className="glass-button" onClick={() => setEditingDest(null)} style={{ flex: 1, background: 'rgba(255,255,255,0.1)', color: 'white', padding: '12px' }}>Cancel</button>
+                <button type="submit" disabled={isUploading} className="glass-button" style={{ flex: 1, background: 'var(--color-emerald)', color: 'white', padding: '12px' }}>{isUploading ? 'Uploading...' : 'Save Changes'}</button>
+                <button type="button" className="glass-button" onClick={() => { setEditingDest(null); setAddingDest(false); }} style={{ flex: 1, background: 'rgba(255,255,255,0.1)', color: 'white', padding: '12px' }}>Cancel</button>
               </div>
             </form>
           </div>
