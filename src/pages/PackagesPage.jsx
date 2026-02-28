@@ -123,7 +123,7 @@ const PackagesPage = () => {
                           </span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               <span style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}>📍</span> 
-                              {pkg.route.split('•')[0].trim()}...
+                              {(pkg.route || pkg.destination || "Various Locations").split('•')[0].trim()}{pkg.route && pkg.route.includes('•') ? '...' : ''}
                           </span>
                         </div>
 

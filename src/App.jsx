@@ -38,9 +38,9 @@ function App() {
                     <Destinations />
                     <Packages />
                     <FAQ />
-                    <Footer />
                   </div>
                 </div>
+                <Footer />
               </>
             } />
             <Route path="/auth" element={<Auth />} />

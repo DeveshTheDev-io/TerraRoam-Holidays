@@ -44,7 +44,7 @@ const Navbar = () => {
       <nav style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
         {!isAdminView && (
           <>
-            <a href="/#destinations" style={{ color: 'white', textDecoration: 'none', fontWeight: 500, fontSize: '1.1rem', transition: 'color 0.3s' }} className="nav-link">Destinations</a>
+            <Link to="/#destinations" style={{ color: 'white', textDecoration: 'none', fontWeight: 500, fontSize: '1.1rem', transition: 'color 0.3s' }} className="nav-link">Destinations</Link>
             <Link to="/packages" style={{ color: 'white', textDecoration: 'none', fontWeight: 500, fontSize: '1.1rem', transition: 'color 0.3s' }} className="nav-link">Packages</Link>
           </>
         )}

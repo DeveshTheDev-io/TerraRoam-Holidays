@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { databases, appwriteConfig, ID } from '../lib/appwriteClient';
+import { Query } from 'appwrite';
 
 const AppContext = createContext();
 
@@ -7,7 +8,6 @@ export const useAppContext = () => useContext(AppContext);
 
 const defaultDestinations = [
   {
-    id: 1,
     name: 'Royal Rajasthan',
     description: 'Explore the majestic forts, palaces, and vibrant culture of the desert state.',
     image: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -15,7 +15,6 @@ const defaultDestinations = [
     media_slides: []
   },
   {
-    id: 2,
     name: 'Serene Kerala',
     description: 'Cruise through tranquil backwaters and relax on pristine tropical beaches.',
     image: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -23,7 +22,6 @@ const defaultDestinations = [
     media_slides: []
   },
   {
-    id: 3,
     name: 'Majestic Himalayas',
     description: 'Experience the spiritual aura and breathtaking peaks of the northern frontier.',
     image: 'https://images.unsplash.com/photo-1626621341517-bbf3d99903b7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -40,25 +38,39 @@ export const AppProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper to get collection ID
+  const getTable = (name) => appwriteConfig.tables[name];
+
   // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: usersData } = await supabase.from('users').select('*');
-        if (usersData) setUsers(usersData);
+        const usersResp = await databases.listDocuments(appwriteConfig.databaseId, getTable('profiles'));
+        if (usersResp?.documents) setUsers(usersResp.documents);
 
-        const { data: packagesData } = await supabase.from('packages').select('*').order('created_at', { ascending: false });
-        if (packagesData) setPackages(packagesData);
+        const packagesResp = await databases.listDocuments(
+            appwriteConfig.databaseId, 
+            getTable('packages'),
+            [Query.orderDesc('$createdAt')]
+        );
+        if (packagesResp?.documents) setPackages(packagesResp.documents);
 
-        const { data: bookingsData } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
-        if (bookingsData) setBookings(bookingsData);
+        const bookingsResp = await databases.listDocuments(
+            appwriteConfig.databaseId, 
+            getTable('bookings'),
+            [Query.orderDesc('$createdAt')]
+        );
+        if (bookingsResp?.documents) setBookings(bookingsResp.documents);
 
         // Check local storage for persistent login
         const savedUser = localStorage.getItem('terraUser');
         if (savedUser) {
           const parsedUser = JSON.parse(savedUser);
-          if (usersData) {
-            const activeDbUser = usersData.find(u => u.id === parsedUser.id);
+          if (usersResp?.documents) {
+            const activeDbUser = usersResp.documents.find(u => 
+              (parsedUser.$id && u.$id === parsedUser.$id) || 
+              (parsedUser.id && u.id === parsedUser.id)
+            );
             if (activeDbUser) {
               setCurrentUser(activeDbUser);
               localStorage.setItem('terraUser', JSON.stringify(activeDbUser));
@@ -71,18 +83,49 @@ export const AppProvider = ({ children }) => {
         }
         
         // Fetch Destinations
-        const { data: destsData } = await supabase.from('destinations').select('*').order('id', { ascending: true });
+        const destsResp = await databases.listDocuments(
+            appwriteConfig.databaseId, 
+            getTable('destinations'),
+            [Query.orderAsc('$createdAt')]
+        );
         
-        if (destsData && destsData.length > 0) {
-          setDestinations(destsData);
+        if (destsResp?.documents && destsResp.documents.length > 0) {
+          setDestinations(destsResp.documents);
         } else {
           // Seed the database with defaults if it's completely empty
-          setDestinations(defaultDestinations);
+          setDestinations(defaultDestinations.map((d, i) => ({ ...d, id: `default-${i}` }))); // Assign temporary IDs for UI
           // Fire and forget insertion of defaults
-          supabase.from('destinations').insert(defaultDestinations.map(({ id, ...rest }) => rest)).then();
+          defaultDestinations.forEach(async (dest) => {
+            try {
+               // Only send exactly what the schema expects!
+               // Extra attributes (even if undefined) cause 400 errors.
+               const destToInsert = { 
+                   name: dest.name,
+                   description: dest.description,
+                   image: dest.image,
+                   tags: dest.tags
+               };
+               
+               await databases.createDocument(
+                   appwriteConfig.databaseId, 
+                   getTable('destinations'), 
+                   ID.unique(), 
+                   destToInsert
+               );
+            } catch (err) {
+               console.error("⛔ Dest Seeding Error ⛔", err.message, err);
+               // If there's an error, it might be due to a missing attribute like 'tags'
+               if (err.code === 400) {
+                 console.warn("Hint: Ensure the 'destinations' collection has attributes: name (String), description (String), image (URL/String), tags (String Array)");
+               }
+            }
+          });
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("⛔ APPWRITE FETCH ERROR ⛔");
+        console.error("Error Message:", error.message);
+        console.error("Error Code:", error.code);
+        console.log("Full Error Object:", error);
       } finally {
         setLoading(false);
       }
@@ -92,59 +135,103 @@ export const AppProvider = ({ children }) => {
 
   // Auth Functions
   const login = async (mobile, password) => {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('mobile', mobile)
-      .eq('password', password)
-      .single();
+    try {
+        // Find user by mobile and password (basic custom auth)
+        const { documents } = await databases.listDocuments(
+            appwriteConfig.databaseId, 
+            getTable('profiles'),
+            [
+                Query.equal('mobile', mobile),
+                Query.equal('password', password)
+            ]
+        );
 
-    if (user && !error) {
-      setCurrentUser(user);
-      localStorage.setItem('terraUser', JSON.stringify(user));
-      // Update status to online in DB
-      await supabase.from('users').update({ status: 'Online' }).eq('id', user.id);
-      setUsers(users.map(u => u.id === user.id ? { ...u, status: 'Online' } : u));
-      return true;
+        const user = documents[0];
+
+        if (user) {
+          setCurrentUser(user);
+          localStorage.setItem('terraUser', JSON.stringify(user));
+          
+          // Update status to online in DB
+          try {
+             await databases.updateDocument(
+                 appwriteConfig.databaseId, 
+                 getTable('profiles'), 
+                 user.$id, 
+                 { status: 'Online' }
+             );
+             setUsers(users.map(u => u.$id === user.$id ? { ...u, status: 'Online' } : u));
+          } catch(e) {
+             console.error("Failed to update user status", e);
+          }
+          return true;
+        }
+        return false;
+    } catch (error) {
+        console.error("Login error:", error);
+         return false;
     }
-    return false;
   };
 
   const signup = async (userData) => {
-    // Check if exists
-    const { data: existing } = await supabase
-      .from('users')
-      .select('id')
-      .or(`email.eq.${userData.email},mobile.eq.${userData.mobile}`);
-      
-    if (existing && existing.length > 0) return false;
+    try {
+        // Check if exists
+        const { documents: existing } = await databases.listDocuments(
+            appwriteConfig.databaseId, 
+            getTable('profiles'),
+            [
+                Query.or([
+                     Query.equal('email', userData.email),
+                     Query.equal('mobile', userData.mobile)
+                ])
+            ]
+        );
+          
+        if (existing && existing.length > 0) return false;
 
-    const { data: newUser, error } = await supabase
-      .from('users')
-      .insert([{ 
-        name: userData.name, 
-        email: userData.email, 
-        mobile: userData.mobile, 
-        password: userData.password,
-        status: 'Online',
-        role: 'user'
-      }])
-      .select()
-      .single();
+        const newUserResp = await databases.createDocument(
+            appwriteConfig.databaseId, 
+            getTable('profiles'), 
+            ID.unique(),
+            { 
+              name: userData.name, 
+              email: userData.email, 
+              mobile: userData.mobile, 
+              password: userData.password,
+              status: 'Online',
+              role: 'user'
+            }
+        );
 
-    if (!error && newUser) {
-      setUsers([...users, newUser]);
-      setCurrentUser(newUser);
-      localStorage.setItem('terraUser', JSON.stringify(newUser));
-      return true;
-    }
-    return false;
+        if (newUserResp) {
+          setUsers([...users, newUserResp]);
+          setCurrentUser(newUserResp);
+          localStorage.setItem('terraUser', JSON.stringify(newUserResp));
+          return true;
+        }
+        return false;
+     } catch (error) {
+        console.error("Signup error:", error);
+         return false;
+     }
   };
 
   const logout = async () => {
     if (currentUser) {
-      await supabase.from('users').update({ status: 'Offline' }).eq('id', currentUser.id);
-      setUsers(users.map(u => u.id === currentUser.id ? { ...u, status: 'Offline' } : u));
+      try {
+          const userId = currentUser.$id || currentUser.id; // Map depending on old vs new data struct
+          if (userId) {
+              await databases.updateDocument(
+                  appwriteConfig.databaseId, 
+                  getTable('profiles'), 
+                  userId, 
+                  { status: 'Offline' }
+              );
+              setUsers(users.map(u => (u.$id === userId || u.id === userId) ? { ...u, status: 'Offline' } : u));
+          }
+      } catch(e) {
+          console.error("Error logging out:", e);
+      }
     }
     setCurrentUser(null);
     localStorage.removeItem('terraUser');
@@ -154,8 +241,11 @@ export const AppProvider = ({ children }) => {
   const createBooking = async (pkgData, details = {}) => {
     if (!currentUser) return false;
     
+    // Normalize user ID to handle Appwrite's $id
+    const userId = currentUser.$id || currentUser.id;
+    
     const pkg = (typeof pkgData === 'string' || typeof pkgData === 'number') 
-      ? packages.find(p => p.id === pkgData) 
+      ? packages.find(p => p.id === pkgData || p.$id === pkgData) 
       : pkgData;
 
     if (!pkg) {
@@ -163,13 +253,18 @@ export const AppProvider = ({ children }) => {
       return false;
     }
     
+    const pkgId = pkg.$id || pkg.id;
+
     try {
       // Check if user already booked this
-      const { data: existingBooking } = await supabase
-        .from('bookings')
-        .select('id')
-        .eq('user_id', currentUser.id)
-        .eq('package_id', pkg.id);
+      const { documents: existingBooking } = await databases.listDocuments(
+          appwriteConfig.databaseId, 
+          getTable('bookings'),
+          [
+              Query.equal('user_id', userId),
+              Query.equal('package_id', pkgId)
+          ]
+      );
         
       if (existingBooking && existingBooking.length > 0) {
         alert("You have already booked this package!");
@@ -180,131 +275,162 @@ export const AppProvider = ({ children }) => {
     }
 
     const bookingData = {
-      id: `BKG-${Math.floor(1000 + Math.random() * 9000)}`,
-      user_id: currentUser.id,
+      user_id: userId,
       user_name: currentUser.name,
-      package_id: pkg.id,
+      package_id: pkgId,
       package_title: pkg.title || pkg.name,
       price: pkg.price,
       status: 'Pending',
       date: `${details.date || new Date().toLocaleDateString()} | Pax: ${details.travelers || 1} | Req: ${details.requests || 'N/A'}`,
     };
 
-    const { data: newBooking, error } = await supabase
-      .from('bookings')
-      .insert([bookingData])
-      .select()
-      .single();
+    try {
+        const newBooking = await databases.createDocument(
+            appwriteConfig.databaseId, 
+            getTable('bookings'), 
+            ID.unique(), 
+            bookingData
+        );
 
-    if (!error && newBooking) {
-      setBookings([newBooking, ...bookings]);
-      return true;
-    }
-    
-    if (error) {
-      console.error("Booking failed:", error);
+        if (newBooking) {
+          setBookings([newBooking, ...bookings]);
+          return true;
+        }
+    } catch (error) {
+         console.error("Booking failed:", error);
+         return false;
     }
     return false;
   };
 
   // Admin Functions
   const updateBookingStatus = async (bookingId, status) => {
-    const { error } = await supabase
-      .from('bookings')
-      .update({ status })
-      .eq('id', bookingId);
-
-    if (!error) {
-      setBookings(bookings.map(b => b.id === bookingId ? { ...b, status } : b));
+    try {
+        await databases.updateDocument(
+            appwriteConfig.databaseId, 
+            getTable('bookings'), 
+            bookingId, 
+            { status }
+        );
+        setBookings(bookings.map(b => (b.$id === bookingId || b.id === bookingId) ? { ...b, status } : b));
+    } catch (error) {
+        console.error("Error updating booking status:", error);
     }
   };
 
   const addPackage = async (newPkg) => {
-    const { data: insertedPkg, error } = await supabase
-      .from('packages')
-      .insert([newPkg])
-      .select()
-      .single();
-
-    if (!error && insertedPkg) {
-      setPackages([insertedPkg, ...packages]);
+    try {
+        const insertedPkg = await databases.createDocument(
+            appwriteConfig.databaseId, 
+            getTable('packages'), 
+            ID.unique(), 
+            newPkg
+        );
+        if (insertedPkg) {
+          setPackages([insertedPkg, ...packages]);
+        }
+    } catch (error) {
+         console.error("Error adding package:", error);
+         console.error("Payload attempted:", newPkg);
+         alert(`Failed to save package: ${error.message}`);
     }
   };
 
   const updatePackage = async (id, updatedData) => {
-    const { error } = await supabase
-      .from('packages')
-      .update(updatedData)
-      .eq('id', id);
-
-    if (!error) {
-      setPackages(packages.map(p => p.id === id ? { ...p, ...updatedData } : p));
-      return true;
+    try {
+        await databases.updateDocument(
+            appwriteConfig.databaseId, 
+            getTable('packages'), 
+            id, 
+            updatedData
+        );
+        setPackages(packages.map(p => (p.$id === id || p.id === id) ? { ...p, ...updatedData } : p));
+        return true;
+    } catch(error) {
+        console.error("Error updating package:", error);
+        return false;
     }
-    console.error("Error updating package:", error);
-    return false;
   };
 
   const toggleFeaturedPackage = async (id, currentStatus) => {
-    const { error } = await supabase
-      .from('packages')
-      .update({ featured: !currentStatus })
-      .eq('id', id);
-
-    if (!error) {
-      setPackages(packages.map(p => p.id === id ? { ...p, featured: !currentStatus } : p));
+    try {
+        await databases.updateDocument(
+            appwriteConfig.databaseId, 
+            getTable('packages'), 
+            id, 
+            { featured: !currentStatus }
+        );
+        setPackages(packages.map(p => (p.$id === id || p.id === id) ? { ...p, featured: !currentStatus } : p));
+    } catch (error) {
+        console.error("Error toggling featured package:", error);
     }
   };
 
   const deletePackage = async (id) => {
-    const { error } = await supabase
-      .from('packages')
-      .delete()
-      .eq('id', id);
-
-    if (!error) {
-      setPackages(packages.filter(p => p.id !== id));
+    try {
+        await databases.deleteDocument(
+            appwriteConfig.databaseId, 
+            getTable('packages'), 
+            id
+        );
+        setPackages(packages.filter(p => p.$id !== id && p.id !== id));
+    } catch (error) {
+         console.error("Error deleting package:", error);
     }
   };
 
-  // Destination Admin Functions (Supabase Integrated)
+  // Destination Admin Functions
   const addDestination = async (newDest) => {
-    const { data: insertedDest, error } = await supabase
-      .from('destinations')
-      .insert([newDest])
-      .select()
-      .single();
-
-    if (!error && insertedDest) {
-      setDestinations([...destinations, insertedDest]);
+    try {
+        const insertedDest = await databases.createDocument(
+            appwriteConfig.databaseId, 
+            getTable('destinations'), 
+            ID.unique(), 
+            newDest
+        );
+        if (insertedDest) {
+          setDestinations([...destinations, insertedDest]);
+        }
+    } catch (error) {
+         console.error("Error adding destination:", error);
     }
   };
   
   const updateDestination = async (id, updatedData) => {
-    const { error } = await supabase
-      .from('destinations')
-      .update(updatedData)
-      .eq('id', id);
-
-    if (!error) {
-       setDestinations(destinations.map(d => d.id === id ? { ...d, ...updatedData } : d));
+    try {
+        await databases.updateDocument(
+            appwriteConfig.databaseId, 
+            getTable('destinations'), 
+            id, 
+            updatedData
+        );
+        setDestinations(destinations.map(d => (d.$id === id || d.id === id) ? { ...d, ...updatedData } : d));
+    } catch (error) {
+        console.error("Error updating destination:", error);
     }
   };
 
   const deleteDestination = async (id) => {
-    const { error } = await supabase
-      .from('destinations')
-      .delete()
-      .eq('id', id);
-
-    if (!error) {
-      setDestinations(destinations.filter(d => d.id !== id));
+    try {
+        await databases.deleteDocument(
+            appwriteConfig.databaseId, 
+            getTable('destinations'), 
+            id
+        );
+        setDestinations(destinations.filter(d => d.$id !== id && d.id !== id));
+    } catch (error) {
+         console.error("Error deleting destination:", error);
     }
   };
 
   return (
     <AppContext.Provider value={{
       users, packages, bookings, destinations, currentUser, loading,
+      // Pass $id as id to components expecting old Supabase schema
+      normalizedPackages: packages.map(p => ({ ...p, id: p.$id || p.id })),
+      normalizedDestinations: destinations.map(d => ({ ...d, id: d.$id || d.id })),
+      normalizedBookings: bookings.map(b => ({ ...b, id: b.$id || b.id })),
+      normalizedCurrentUser: currentUser ? { ...currentUser, id: currentUser.$id || currentUser.id } : null,
       login, signup, logout, createBooking, 
       updateBookingStatus, addPackage, updatePackage, deletePackage, toggleFeaturedPackage,
       addDestination, updateDestination, deleteDestination
@@ -313,3 +439,4 @@ export const AppProvider = ({ children }) => {
     </AppContext.Provider>
   );
 };
+

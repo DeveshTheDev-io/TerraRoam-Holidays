@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
 import { CreativePricing } from './ui/creative-pricing';
-import { Sparkles, Map, Mountain, Sunrise } from 'lucide-react';
+import { Sparkles, Map, Mountain, Sunrise, Backpack } from 'lucide-react';
 
 const Packages = () => {
   const navigate = useNavigate();
@@ -62,13 +63,39 @@ const Packages = () => {
     }
   ];
 
+  const { normalizedPackages, loading } = useAppContext();
+
+  const displayPackages = useMemo(() => {
+    if (loading) return []; // Or return tourPackages as fallback during load
+    
+    // Filter to only featured packages
+    const featuredList = normalizedPackages.filter(pkg => pkg.featured);
+    
+    if (featuredList.length === 0) {
+      // Fallback to hardcoded mock data if no featured packages exist in DB
+      return tourPackages;
+    }
+
+    // Map Appwrite package structure to what CreativePricing expects
+    return featuredList.map(pkg => ({
+      id: pkg.id,
+      name: pkg.title || "Tour Package",
+      icon: <Backpack className="w-8 h-8" />, // Default icon, could be dynamic based on tags
+      price: pkg.price || 0,
+      description: pkg.description || "An amazing guided tour.",
+      features: (pkg.included || "").split(',').map(f => f.trim()).filter(f => f),
+      colorCode: "#ff9933", // Default color
+      popular: pkg.popular || false,
+    }));
+  }, [normalizedPackages, loading]);
+
   return (
     <>
       <CreativePricing 
         tag="Featured ITINERARIES"
         title="Discover India's Magic"
         description="Handcrafted journeys to the most breathtaking destinations in the subcontinent"
-        tiers={tourPackages}
+        tiers={displayPackages}
       />
       <div style={{ textAlign: 'center', marginBottom: '80px', position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'center' }}>
         <div style={{ position: 'relative' }}>

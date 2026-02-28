@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, Globe } from "lucide-react";
 import { TextHoverEffect, FooterBackgroundGradient } from './ui/hover-footer';
+import FloatingPlacesBackground from './FloatingPlacesBackground';
 
 const Footer = () => {
   const footerLinks = [
@@ -60,15 +61,19 @@ const Footer = () => {
   ];
 
   return (
-    <footer style={{ 
-      background: 'rgba(15, 15, 17, 0.4)', 
-      position: 'relative', 
-      height: 'fit-content', 
-      borderRadius: '24px', 
-      overflow: 'hidden', 
-      margin: '40px 20px',
-      border: '1px solid rgba(255,255,255,0.05)'
-    }}>
+    <div style={{ background: '#000000', padding: '40px 0' }}>
+      <footer style={{ 
+        background: '#050508', 
+        position: 'relative', 
+        height: 'fit-content', 
+        borderRadius: '24px', 
+        overflow: 'hidden', 
+        margin: '0 20px',
+        border: '1px solid rgba(255,255,255,0.05)'
+      }}>
+        {/* Floating Background Layer - Dimmer and fewer items for footer */}
+        <FloatingPlacesBackground count={6} baseOpacity={0.25} />
+
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '60px 40px', position: 'relative', zIndex: 40 }}>
         <div style={{ 
           display: 'grid', 
@@ -199,7 +204,8 @@ const Footer = () => {
       </div>
 
       <FooterBackgroundGradient />
-    </footer>
+      </footer>
+    </div>
   );
 }
 

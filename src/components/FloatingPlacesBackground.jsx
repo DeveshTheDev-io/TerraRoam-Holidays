@@ -11,18 +11,22 @@ const places = [
   "Mahabaleshwar", "Gokarna", "Dalhousie"
 ];
 
-const FloatingPlacesBackground = () => {
+const FloatingPlacesBackground = ({ count = places.length, baseOpacity = 0.8 }) => {
   const [elements, setElements] = useState([]);
 
   useEffect(() => {
     // Generate randomized elements on mount to prevent hydration mismatch and ensure variety
-    const newElements = places.map((place, i) => {
+    // Shuffle and pick subset if count is applied
+    const shuffled = [...places].sort(() => 0.5 - Math.random());
+    const selectedPlaces = shuffled.slice(0, count);
+
+    const newElements = selectedPlaces.map((place, i) => {
       const top = Math.random() * 100;
       const left = Math.random() * 100;
       const animationDuration = 30 + Math.random() * 50; // Between 30s and 80s
       const animationDelay = -Math.random() * 50; // Stagger start times
       const fontSize = 1 + Math.random() * 2; // Between 1rem and 3rem
-      const opacity = 0.8 + Math.random() * 0.2; // At least 80% opacity (0.8 to 1.0)
+      const opacity = baseOpacity * (0.8 + Math.random() * 0.2); // Multiply against base
       const isReverse = Math.random() > 0.5;
 
       return {
@@ -40,7 +44,7 @@ const FloatingPlacesBackground = () => {
       };
     });
     setElements(newElements);
-  }, []);
+  }, [count, baseOpacity]);
 
   return (
     <div className="floating-places-container" style={{

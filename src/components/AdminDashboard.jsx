@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { storage, appwriteConfig, ID } from '../lib/appwriteClient';
 
 const AdminDashboard = () => {
-  const { users, bookings, packages, currentUser, logout, updateBookingStatus, addPackage, deletePackage, toggleFeaturedPackage, updatePackage, destinations, addDestination, updateDestination, deleteDestination } = useAppContext();
+  const { 
+      users, currentUser, logout, updateBookingStatus, 
+      addPackage, deletePackage, toggleFeaturedPackage, updatePackage, 
+      addDestination, updateDestination, deleteDestination,
+      normalizedPackages: packages, 
+      normalizedBookings: bookings, 
+      normalizedDestinations: destinations 
+  } = useAppContext();
+  
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('bookings');
   const [editingPkg, setEditingPkg] = useState(null);
@@ -13,22 +21,30 @@ const AdminDashboard = () => {
   const [addingDest, setAddingDest] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  const uploadImageToSupabase = async (file) => {
+  const uploadImageToAppwrite = async (file) => {
     if (!file) return null;
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
     
     setIsUploading(true);
     try {
-      const { data, error } = await supabase.storage.from('images').upload(filePath, file);
-      if (error) {
-        console.error('Error uploading image:', error);
-        alert('Error uploading image');
-        return null;
+      const result = await storage.createFile(
+          appwriteConfig.storageId,
+          ID.unique(),
+          file
+      );
+      
+      if (result && result.$id) {
+          // Get public view URL
+          const fileUrl = storage.getFileView(
+              appwriteConfig.storageId,
+              result.$id
+          );
+          return fileUrl.href || fileUrl; // Get the raw string url
       }
-      const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(filePath);
-      return publicUrlData.publicUrl;
+      return null;
+    } catch (error) {
+      console.error('Error uploading image to Appwrite:', error);
+      alert('Error uploading image');
+      return null;
     } finally {
       setIsUploading(false);
     }
@@ -296,7 +312,7 @@ const AdminDashboard = () => {
               let imageUrl = editingPkg ? editingPkg.image : '';
               const imageFile = formData.get('imageFile');
               if (imageFile && imageFile.size > 0) {
-                const uploadedUrl = await uploadImageToSupabase(imageFile);
+                const uploadedUrl = await uploadImageToAppwrite(imageFile);
                 if (uploadedUrl) imageUrl = uploadedUrl;
               }
 
@@ -305,6 +321,9 @@ const AdminDashboard = () => {
                 price: parseFloat(formData.get('price')),
                 duration: formData.get('duration'),
                 description: formData.get('description'),
+                destination: formData.get('destination'),
+                included: formData.get('included') || '',
+                popular: formData.get('popular') === 'on',
                 image: imageUrl
               };
 
@@ -313,7 +332,6 @@ const AdminDashboard = () => {
                 setEditingPkg(null);
               } else {
                 pkgData.featured = false;
-                pkgData.route = 'Local';
                 await addPackage(pkgData);
                 setAddingPkg(false);
               }
@@ -333,6 +351,18 @@ const AdminDashboard = () => {
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Description / Features</label>
                 <textarea name="description" defaultValue={editingPkg ? editingPkg.description : ''} rows={4} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px', resize: 'none' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Destination</label>
+                <input name="destination" defaultValue={editingPkg ? editingPkg.destination : ''} required style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Features/Included (Comma separated)</label>
+                <input name="included" defaultValue={editingPkg ? editingPkg.included : ''} placeholder="5 Days / 4 Nights, 4-Star Accommodation, Daily Breakfast" style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input type="checkbox" name="popular" id="popular" defaultChecked={editingPkg ? editingPkg.popular : false} style={{ width: '20px', height: '20px', accentColor: 'var(--color-saffron)', cursor: 'pointer' }} />
+                <label htmlFor="popular" style={{ color: 'var(--text-dim)', cursor: 'pointer' }}>Mark as "Most Popular" on the Home Page</label>
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Package Image {editingPkg && '(Leave blank to keep current)'}</label>
@@ -364,19 +394,8 @@ const AdminDashboard = () => {
               let mainImageUrl = editingDest ? editingDest.image : '';
               const mainImageFile = formData.get('mainImageFile');
               if (mainImageFile && mainImageFile.size > 0) {
-                const uploadedUrl = await uploadImageToSupabase(mainImageFile);
+                const uploadedUrl = await uploadImageToAppwrite(mainImageFile);
                 if (uploadedUrl) mainImageUrl = uploadedUrl;
-              }
-
-              let slidesArray = editingDest && editingDest.media_slides ? [...editingDest.media_slides] : [];
-              const slideFiles = formData.getAll('slideFiles');
-              
-              if (slideFiles && slideFiles.length > 0 && slideFiles[0].size > 0) {
-                setIsUploading(true);
-                const slideUploadPromises = slideFiles.map(file => uploadImageToSupabase(file));
-                const newSlidesUrls = await Promise.all(slideUploadPromises);
-                slidesArray = [...slidesArray, ...newSlidesUrls.filter(url => url !== null)];
-                setIsUploading(false);
               }
               
               const destData = {
@@ -384,7 +403,6 @@ const AdminDashboard = () => {
                 description: formData.get('description'),
                 tags: tagsArray,
                 image: mainImageUrl,
-                media_slides: slidesArray,
               };
 
               if (editingDest) {
@@ -410,13 +428,6 @@ const AdminDashboard = () => {
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Tags (Comma separated)</label>
                 <input name="tags" defaultValue={editingDest ? (editingDest.tags || []).join(', ') : ''} placeholder="Mountains, Nature" style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Add Slideshow Media (Multiple images)</label>
-                <input name="slideFiles" type="file" accept="image/*" multiple style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
-                {editingDest && editingDest.media_slides && editingDest.media_slides.length > 0 && (
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '5px' }}>Current slides: {editingDest.media_slides.length} media files attached.</p>
-                )}
               </div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button type="submit" disabled={isUploading} className="glass-button" style={{ flex: 1, background: 'var(--color-emerald)', color: 'white', padding: '12px' }}>{isUploading ? 'Uploading...' : 'Save Changes'}</button>
