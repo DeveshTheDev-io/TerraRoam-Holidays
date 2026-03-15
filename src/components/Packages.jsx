@@ -20,6 +20,7 @@ const Packages = () => {
         "Daily Breakfast",
       ],
       colorCode: "#ff9933", // Saffron
+      image: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     },
     {
       name: "Himalayan Escape",
@@ -34,6 +35,7 @@ const Packages = () => {
       ],
       colorCode: "#138808", // Emerald
       popular: true,
+      image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     },
     {
       name: "Kerala Backwaters",
@@ -47,6 +49,7 @@ const Packages = () => {
         "Airport Transfers",
       ],
       colorCode: "#000080", // Navy
+      image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     },
     {
       name: "Royal Rajasthan",
@@ -60,6 +63,7 @@ const Packages = () => {
         "Cultural Shows",
       ],
       colorCode: "#dc143c", // Crimson
+      image: "https://images.unsplash.com/photo-1477587458883-47145ed94245?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     }
   ];
 
@@ -86,6 +90,7 @@ const Packages = () => {
       features: (pkg.included || "").split(',').map(f => f.trim()).filter(f => f),
       colorCode: "#ff9933", // Default color
       popular: pkg.popular || false,
+      image: pkg.image || "https://images.unsplash.com/photo-1506461883276-594a12b11cf3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     }));
   }, [normalizedPackages, loading]);
 

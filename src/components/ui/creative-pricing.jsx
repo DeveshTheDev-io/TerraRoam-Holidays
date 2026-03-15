@@ -1,20 +1,158 @@
 import React, { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import BookingModal from "../BookingModal";
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 
-function PricingTier({ tier, index, onBook }) {
+const PackageDetailsModal = ({ isOpen, onClose, pkg, onInitBook }) => {
+    if (!isOpen || !pkg) return null;
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    zIndex: 9999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.7)',
+                    backdropFilter: 'blur(10px)',
+                    padding: '20px'
+                }}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="glass-panel"
+                        style={{
+                            width: '100%',
+                            maxWidth: '600px',
+                            background: 'rgba(15, 15, 20, 0.95)',
+                            borderRadius: '24px',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            maxHeight: '90vh',
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }}
+                    >
+                        {/* Header Image */}
+                        <div style={{ 
+                            width: '100%', 
+                            height: '250px', 
+                            backgroundImage: `url(${pkg.image})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            position: 'relative'
+                        }}>
+                            <div style={{
+                                position: 'absolute',
+                                top: 0, left: 0, right: 0, bottom: 0,
+                                background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(15,15,20,1))'
+                            }} />
+                            <button 
+                                onClick={onClose}
+                                style={{
+                                    position: 'absolute',
+                                    top: '20px',
+                                    right: '20px',
+                                    background: 'rgba(0,0,0,0.5)',
+                                    borderRadius: '50%',
+                                    border: 'none',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    padding: '8px',
+                                    backdropFilter: 'blur(5px)'
+                                }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div style={{ padding: '30px', overflowY: 'auto' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+                                <div>
+                                    <h2 style={{ fontSize: '2.2rem', fontWeight: 'bold', margin: '0 0 10px 0' }}>{pkg.name || pkg.title}</h2>
+                                    <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem', lineHeight: '1.6', margin: 0 }}>
+                                        {pkg.description}
+                                    </p>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-saffron)' }}>
+                                        ₹{(pkg.price || 0).toLocaleString('en-IN')}
+                                    </div>
+                                    <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>per person</div>
+                                </div>
+                            </div>
+
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px', marginBottom: '30px' }}>
+                                <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', color: 'white' }}>Key Inclusions</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                                    {(pkg.features || []).map((feature, idx) => (
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <Check size={16} color="var(--color-saffron)" style={{ flexShrink: 0 }} />
+                                            <span style={{ color: '#e5e7eb', fontSize: '1rem' }}>{feature}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    onClose();
+                                    onInitBook(pkg);
+                                }}
+                                className="glass-button"
+                                style={{
+                                    width: '100%',
+                                    padding: '16px',
+                                    fontSize: '1.2rem',
+                                    fontWeight: 'bold',
+                                    background: 'var(--color-saffron)',
+                                    color: '#000',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 15px rgba(255,153,51,0.3)',
+                                    transition: 'transform 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+                                onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+                            >
+                                Book This Itinerary
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+    );
+};
+
+function PricingTier({ tier, index, onShowDetails }) {
     const [isHovered, setIsHovered] = useState(false);
-    const rotation = index === 0 ? '-1deg' : index === 1 ? '1deg' : index === 2 ? '-2deg' : '2deg';
+    const rotation = index % 4 === 0 ? '-1deg' : index % 4 === 1 ? '1deg' : index % 4 === 2 ? '-2deg' : '2deg';
 
     return (
         <div
+            onClick={() => onShowDetails(tier)}
             style={{
                 position: 'relative',
-                transform: `rotate(${rotation}) ${isHovered ? 'translateY(-10px)' : ''}`,
-                transition: 'all 0.3s ease',
-                cursor: 'default'
+                transform: `rotate(${rotation}) ${isHovered ? 'translateY(-10px) scale(1.02)' : ''}`,
+                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                cursor: 'pointer',
+                height: '400px',
+                borderRadius: '24px',
+                overflow: 'hidden',
+                boxShadow: isHovered 
+                    ? '0 20px 40px rgba(0,0,0,0.6)' 
+                    : '6px 6px 0px 0px rgba(255, 255, 255, 0.1)',
+                border: tier.popular ? '2px solid rgba(255, 153, 51, 0.5)' : 'border: 1px solid rgba(255,255,255,0.1)'
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -23,133 +161,69 @@ function PricingTier({ tier, index, onBook }) {
                 style={{
                     position: 'absolute',
                     top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(26, 26, 30, 0.8)',
-                    backdropFilter: 'blur(12px)',
-                    border: `2px solid ${tier.popular ? 'rgba(255, 153, 51, 0.5)' : 'rgba(255, 255, 255, 0.2)'}`,
-                    borderRadius: '24px',
-                    boxShadow: tier.popular 
-                        ? `6px 6px 0px 0px rgba(255, 153, 51, ${isHovered ? '0.8' : '0.5'})` 
-                        : `6px 6px 0px 0px rgba(255, 255, 255, ${isHovered ? '0.4' : '0.2'})`,
-                    transition: 'all 0.3s ease',
-                    transform: isHovered ? 'translate(-4px, -4px)' : 'none',
+                    backgroundImage: `url(${tier.image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    transition: 'transform 0.5s ease',
+                    transform: isHovered ? 'scale(1.1)' : 'scale(1)',
                     zIndex: 0
                 }}
             />
+            {/* Gradient Overlay for text readability */}
+            <div style={{
+                position: 'absolute',
+                top: 0, left: 0, right: 0, bottom: 0,
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%)',
+                zIndex: 1
+            }} />
 
-            <div style={{ position: 'relative', padding: '40px 30px', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ position: 'relative', padding: '30px', zIndex: 2, display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'flex-end' }}>
                 {tier.popular && (
                     <div
                         style={{
                             position: 'absolute',
-                            top: '-15px',
-                            right: '-15px',
+                            top: '20px',
+                            right: '-10px',
                             background: 'var(--color-saffron)',
                             color: '#000',
                             fontWeight: 'bold',
-                            padding: '8px 20px',
-                            borderRadius: '30px',
-                            transform: 'rotate(12deg)',
-                            fontSize: '0.9rem',
-                            border: '2px solid rgba(0,0,0,0.8)',
+                            padding: '6px 16px',
+                            borderRadius: '20px',
+                            fontSize: '0.8rem',
                             boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
                             letterSpacing: '1px'
                         }}
                     >
-                        MOST POPULAR
+                        POPULAR
                     </div>
                 )}
 
-                <div style={{ marginBottom: '30px' }}>
-                    <div
-                        style={{
-                            width: '64px',
-                            height: '64px',
-                            borderRadius: '16px',
-                            marginBottom: '24px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border: '2px solid rgba(255,255,255,0.2)',
-                            background: 'rgba(0,0,0,0.5)',
-                            color: tier.colorCode || 'var(--color-saffron)',
-                            boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
-                        }}
-                    >
-                        {tier.icon}
-                    </div>
-                    <h3 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'white', marginBottom: '10px' }}>
-                        {tier.name}
-                    </h3>
-                    <p style={{ color: 'var(--text-dim)', minHeight: '48px', lineHeight: '1.5' }}>
-                        {tier.description}
-                    </p>
-                </div>
-
-                <div style={{ marginBottom: '30px', paddingBottom: '30px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                    <span style={{ fontSize: '3.5rem', fontWeight: 'bold', color: 'white' }}>
-                        ₹{tier.price.toLocaleString('en-IN')}
-                    </span>
-                    <span style={{ color: 'var(--text-dim)', marginLeft: '10px', fontSize: '1.1rem' }}>
-                        /person
+                <h3 style={{ 
+                    fontSize: '2rem', 
+                    fontWeight: 'bold', 
+                    color: 'white', 
+                    margin: '0 0 10px 0',
+                    textShadow: '0 2px 10px rgba(0,0,0,0.5)'
+                }}>
+                    {tier.name}
+                </h3>
+                
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    opacity: isHovered ? 1 : 0.8,
+                    transform: isHovered ? 'translateY(0)' : 'translateY(10px)',
+                    transition: 'all 0.3s ease'
+                }}>
+                    <span style={{ 
+                        color: 'var(--color-saffron)', 
+                        fontWeight: 'bold', 
+                        fontSize: '1.1rem' 
+                    }}>
+                        View Details &rarr;
                     </span>
                 </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px', flexGrow: 1 }}>
-                    {tier.features.map((feature) => (
-                        <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <div style={{
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '50%',
-                                border: '1px solid rgba(255,255,255,0.3)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                                background: 'rgba(0,0,0,0.3)'
-                            }}>
-                                <Check size={14} color="var(--color-saffron)" />
-                            </div>
-                            <span style={{ fontSize: '1.1rem', color: '#e5e7eb' }}>
-                                {feature}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-
-                <button
-                    onClick={() => onBook(tier)}
-                    className="glass-button"
-                    style={{
-                        width: '100%',
-                        height: '56px',
-                        fontSize: '1.1rem',
-                        fontWeight: 'bold',
-                        borderRadius: '12px',
-                        border: '2px solid rgba(255,255,255,0.1)',
-                        background: tier.popular ? 'var(--color-saffron)' : 'rgba(255,255,255,0.1)',
-                        color: tier.popular ? '#000' : 'white',
-                        transition: 'all 0.3s ease',
-                        marginTop: 'auto',
-                        cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => {
-                        if (tier.popular) {
-                            e.currentTarget.style.background = '#ffad4d';
-                        } else {
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                        }
-                    }}
-                    onMouseLeave={(e) => {
-                        if (tier.popular) {
-                            e.currentTarget.style.background = 'var(--color-saffron)';
-                        } else {
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                        }
-                    }}
-                >
-                    Book Now
-                </button>
             </div>
         </div>
     );
@@ -163,19 +237,18 @@ export function CreativePricing({
 }) {
     const { currentUser } = useAppContext();
     const navigate = useNavigate();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedPkg, setSelectedPkg] = useState(null);
+    
+    const [detailsModalPkg, setDetailsModalPkg] = useState(null);
+    const [bookingModalPkg, setBookingModalPkg] = useState(null);
 
-    const handleBook = (pkg) => {
+    const handleInitBook = (pkg) => {
         if (!currentUser) {
             if (window.confirm("You need to be logged in to book a package. Go to Login?")) {
                 navigate('/auth');
             }
             return;
         }
-        // Assign a mock ID if this is a homepage static package missing a db ID
-        setSelectedPkg({ ...pkg, id: pkg.id || pkg.name.replace(/\s+/g, '-').toLowerCase() });
-        setIsModalOpen(true);
+        setBookingModalPkg({ ...pkg, id: pkg.id || pkg.name.replace(/\s+/g, '-').toLowerCase() });
     };
 
     return (
@@ -234,15 +307,15 @@ export function CreativePricing({
 
             <div style={{ 
                 display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-                gap: '30px'
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+                gap: '40px'
             }}>
                 {tiers.map((tier, index) => (
                     <PricingTier 
                         key={tier.name} 
                         tier={tier} 
                         index={index} 
-                        onBook={handleBook} 
+                        onShowDetails={setDetailsModalPkg} 
                     />
                 ))}
             </div>
@@ -253,10 +326,17 @@ export function CreativePricing({
                 <div style={{ position: 'absolute', top: '50%', left: '25%', fontSize: '4rem', transform: 'rotate(45deg)', opacity: 0.5 }}>🏔️</div>
             </div>
 
+            <PackageDetailsModal 
+                isOpen={!!detailsModalPkg} 
+                onClose={() => setDetailsModalPkg(null)} 
+                pkg={detailsModalPkg} 
+                onInitBook={handleInitBook}
+            />
+
             <BookingModal 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
-                pkg={selectedPkg} 
+                isOpen={!!bookingModalPkg} 
+                onClose={() => setBookingModalPkg(null)} 
+                pkg={bookingModalPkg} 
             />
         </div>
     );

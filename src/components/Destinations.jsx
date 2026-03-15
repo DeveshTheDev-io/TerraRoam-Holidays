@@ -4,8 +4,10 @@ import { useAppContext } from '../context/AppContext';
 import DestinationModal from './DestinationModal';
 
 const Destinations = () => {
-  const { destinations } = useAppContext();
+  const { normalizedDestinations, loading } = useAppContext();
   const [selectedDest, setSelectedDest] = useState(null);
+
+  if (loading) return null;
 
   return (
     <section id="destinations" style={{ position: 'relative', zIndex: 10, overflow: 'hidden' }}>
@@ -31,7 +33,7 @@ const Destinations = () => {
           overflowY: 'auto',
           background: 'rgba(10, 10, 15, 0.8)',
         }}>
-          {destinations.map((dest) => (
+          {normalizedDestinations.map((dest) => (
             <div 
               key={dest.id} 
               className="glass-panel" 
@@ -68,7 +70,7 @@ const Destinations = () => {
               
               <div style={{ padding: '20px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '15px', flexWrap: 'wrap' }}>
-                  {dest.tags.map(tag => (
+                  {(dest.tags || []).map(tag => (
                     <span key={tag} style={{
                       fontSize: '0.75rem',
                       padding: '4px 10px',

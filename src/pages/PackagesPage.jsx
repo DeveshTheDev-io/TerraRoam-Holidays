@@ -1,13 +1,45 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
 
 const PackagesPage = () => {
-  const { packages, currentUser, createBooking } = useAppContext();
+  const { packages, currentUser, createBooking, normalizedBookings } = useAppContext();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState(null);
+  const [searchParams] = useSearchParams();
+
+  const searchTheme = searchParams.get('theme') || '';
+  const searchDuration = searchParams.get('duration') || '';
+  const searchPrice = searchParams.get('price') || '';
+
+  const filteredPackages = packages.filter(pkg => {
+    let matchesTheme = true;
+    if (searchTheme) {
+        // Simple string match against relevant fields. Needs robust data tagging for production.
+        const searchAgainst = (`${pkg.title} ${pkg.description} ${pkg.destination} ${pkg.included}`).toLowerCase();
+        matchesTheme = searchAgainst.includes(searchTheme.toLowerCase());
+    }
+
+    let matchesDuration = true;
+    if (searchDuration) {
+        const daysMatch = pkg.duration.match(/\d+/);
+        const days = daysMatch ? parseInt(daysMatch[0]) : 0;
+        if (searchDuration === '1-3') matchesDuration = days >= 1 && days <= 3;
+        if (searchDuration === '4-7') matchesDuration = days >= 4 && days <= 7;
+        if (searchDuration === '8+') matchesDuration = days >= 8;
+    }
+
+    let matchesPrice = true;
+    if (searchPrice) {
+        if (searchPrice === 'under_10k') matchesPrice = pkg.price < 10000;
+        if (searchPrice === '10k_30k') matchesPrice = pkg.price >= 10000 && pkg.price <= 30000;
+        if (searchPrice === 'above_30k') matchesPrice = pkg.price > 30000;
+    }
+
+    return matchesTheme && matchesDuration && matchesPrice;
+  });
 
   const handleBook = (pkg) => {
     if (!currentUser) {
@@ -31,7 +63,12 @@ const PackagesPage = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px' }}>
-        {packages.map((pkg, index) => {
+        {filteredPackages.length === 0 && (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '50px', color: 'var(--text-dim)', fontSize: '1.2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                No packages match your search criteria. Try adjusting your filters.
+            </div>
+        )}
+        {filteredPackages.map((pkg, index) => {
           const rotation = index % 4 === 0 ? '-1deg' : index % 4 === 1 ? '1deg' : index % 4 === 2 ? '-2deg' : '2deg';
           
           return (
@@ -127,39 +164,50 @@ const PackagesPage = () => {
                           </span>
                         </div>
 
-                        <button
-                            onClick={() => handleBook(pkg)}
-                            className="glass-button"
-                            style={{
-                                width: '100%',
-                                height: '56px',
-                                fontSize: '1.1rem',
-                                fontWeight: 'bold',
-                                borderRadius: '12px',
-                                border: '2px solid rgba(255,255,255,0.1)',
-                                background: pkg.featured ? 'var(--color-saffron)' : 'rgba(255,255,255,0.1)',
-                                color: pkg.featured ? '#000' : 'white',
-                                transition: 'all 0.3s ease',
-                                cursor: 'pointer',
-                                marginTop: 'auto'
-                            }}
-                            onMouseEnter={(e) => {
-                                if (pkg.featured) {
-                                    e.currentTarget.style.background = '#ffad4d';
-                                } else {
-                                    e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (pkg.featured) {
-                                    e.currentTarget.style.background = 'var(--color-saffron)';
-                                } else {
-                                    e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                                }
-                            }}
-                        >
-                            Book Package
-                        </button>
+                        {(() => {
+                            const pkgId = pkg.id || pkg.$id;
+                            const userId = currentUser ? (currentUser.id || currentUser.$id) : null;
+                            const hasBooked = currentUser && normalizedBookings.some(b => b.package_id === pkgId && b.user_id === userId);
+                            return (
+                                <button
+                                    onClick={() => handleBook(pkg)}
+                                    className="glass-button"
+                                    style={{
+                                        width: '100%',
+                                        height: '56px',
+                                        fontSize: '1.1rem',
+                                        fontWeight: 'bold',
+                                        borderRadius: '12px',
+                                        border: '2px solid rgba(255,255,255,0.1)',
+                                        background: pkg.featured ? 'var(--color-saffron)' : (hasBooked ? 'rgba(19, 136, 8, 0.2)' : 'rgba(255,255,255,0.1)'),
+                                        color: pkg.featured ? '#000' : (hasBooked ? 'var(--color-emerald)' : 'white'),
+                                        transition: 'all 0.3s ease',
+                                        cursor: 'pointer',
+                                        marginTop: 'auto'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (pkg.featured) {
+                                            e.currentTarget.style.background = '#ffad4d';
+                                        } else if (hasBooked) {
+                                            e.currentTarget.style.background = 'rgba(19, 136, 8, 0.3)';
+                                        } else {
+                                            e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (pkg.featured) {
+                                            e.currentTarget.style.background = 'var(--color-saffron)';
+                                        } else if (hasBooked) {
+                                            e.currentTarget.style.background = 'rgba(19, 136, 8, 0.2)';
+                                        } else {
+                                            e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                                        }
+                                    }}
+                                >
+                                    {hasBooked ? 'Booked ✓ (Book Again)' : 'Book Package'}
+                                </button>
+                            );
+                        })()}
                     </div>
                 </div>
             </div>

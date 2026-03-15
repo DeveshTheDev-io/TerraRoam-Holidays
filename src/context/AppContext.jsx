@@ -255,24 +255,8 @@ export const AppProvider = ({ children }) => {
     
     const pkgId = pkg.$id || pkg.id;
 
-    try {
-      // Check if user already booked this
-      const { documents: existingBooking } = await databases.listDocuments(
-          appwriteConfig.databaseId, 
-          getTable('bookings'),
-          [
-              Query.equal('user_id', userId),
-              Query.equal('package_id', pkgId)
-          ]
-      );
-        
-      if (existingBooking && existingBooking.length > 0) {
-        alert("You have already booked this package!");
-        return false;
-      }
-    } catch(err) {
-      console.warn("Non-fatal check error:", err);
-    }
+    // Removed duplicate booking check to allow re-booking
+
 
     const bookingData = {
       user_id: userId,

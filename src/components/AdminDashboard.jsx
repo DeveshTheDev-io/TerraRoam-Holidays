@@ -324,7 +324,7 @@ const AdminDashboard = () => {
                 destination: formData.get('destination'),
                 included: formData.get('included') || '',
                 popular: formData.get('popular') === 'on',
-                image: imageUrl
+                image: imageUrl || 'https://images.unsplash.com/photo-1506461883276-594a12b11cf3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' // Add placeholder if no image provided to avoid broken UI early on
               };
 
               if (editingPkg) {
@@ -366,7 +366,8 @@ const AdminDashboard = () => {
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-dim)' }}>Package Image {editingPkg && '(Leave blank to keep current)'}</label>
-                <input name="imageFile" type="file" accept="image/*" required={!editingPkg} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+                <input name="imageFile" type="file" accept="image/*" style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '5px' }} />
+                <small style={{ color: 'var(--text-dim)' }}>Optional. A default placeholder will be used if left blank.</small>
               </div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button type="submit" disabled={isUploading} className="glass-button" style={{ flex: 1, background: 'var(--color-emerald)', color: 'white', padding: '12px' }}>{isUploading ? 'Uploading...' : 'Save Changes'}</button>
