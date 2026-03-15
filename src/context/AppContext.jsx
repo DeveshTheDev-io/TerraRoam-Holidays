@@ -36,6 +36,7 @@ export const AppProvider = ({ children }) => {
   const [bookings, setBookings] = useState([]);
   const [destinations, setDestinations] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [callbackRequests, setCallbackRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Helper to get collection ID
@@ -61,6 +62,13 @@ export const AppProvider = ({ children }) => {
             [Query.orderDesc('$createdAt')]
         );
         if (bookingsResp?.documents) setBookings(bookingsResp.documents);
+
+        const callbacksResp = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            getTable('callback_requests'),
+            [Query.orderDesc('$createdAt')]
+        ).catch(() => null); // Ignore error if table doesn't exist yet
+        if (callbacksResp?.documents) setCallbackRequests(callbacksResp.documents);
 
         // Check local storage for persistent login
         const savedUser = localStorage.getItem('terraUser');
@@ -407,6 +415,39 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Callback Functions
+  const createCallbackRequest = async (requestData) => {
+    try {
+        const newRequest = await databases.createDocument(
+            appwriteConfig.databaseId,
+            getTable('callback_requests'),
+            ID.unique(),
+            { ...requestData, status: 'Pending' }
+        );
+        if (newRequest) {
+            setCallbackRequests([newRequest, ...callbackRequests]);
+            return true;
+        }
+    } catch (error) {
+        console.error("Error creating callback request:", error);
+    }
+    return false;
+  };
+
+  const updateCallbackStatus = async (id, status) => {
+    try {
+        await databases.updateDocument(
+            appwriteConfig.databaseId,
+            getTable('callback_requests'),
+            id,
+            { status }
+        );
+        setCallbackRequests(callbackRequests.map(c => (c.$id === id || c.id === id) ? { ...c, status } : c));
+    } catch (error) {
+        console.error("Error updating callback status:", error);
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       users, packages, bookings, destinations, currentUser, loading,
@@ -414,10 +455,11 @@ export const AppProvider = ({ children }) => {
       normalizedPackages: packages.map(p => ({ ...p, id: p.$id || p.id })),
       normalizedDestinations: destinations.map(d => ({ ...d, id: d.$id || d.id })),
       normalizedBookings: bookings.map(b => ({ ...b, id: b.$id || b.id })),
+      normalizedCallbackRequests: callbackRequests.map(c => ({ ...c, id: c.$id || c.id })),
       normalizedCurrentUser: currentUser ? { ...currentUser, id: currentUser.$id || currentUser.id } : null,
       login, signup, logout, createBooking, 
       updateBookingStatus, addPackage, updatePackage, deletePackage, toggleFeaturedPackage,
-      addDestination, updateDestination, deleteDestination
+      addDestination, updateDestination, deleteDestination, createCallbackRequest, updateCallbackStatus
     }}>
       {children}
     </AppContext.Provider>

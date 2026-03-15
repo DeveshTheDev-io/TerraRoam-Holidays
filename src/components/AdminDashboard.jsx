@@ -10,7 +10,9 @@ const AdminDashboard = () => {
       addDestination, updateDestination, deleteDestination,
       normalizedPackages: packages, 
       normalizedBookings: bookings, 
-      normalizedDestinations: destinations 
+      normalizedDestinations: destinations,
+      normalizedCallbackRequests: callbackRequests,
+      updateCallbackStatus
   } = useAppContext();
   
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ const AdminDashboard = () => {
   const [addingPkg, setAddingPkg] = useState(false);
   const [addingDest, setAddingDest] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const pendingCallbacks = (callbackRequests || []).filter(c => c.status === 'Pending').length;
 
   const uploadImageToAppwrite = async (file) => {
     if (!file) return null;
@@ -89,15 +92,23 @@ const AdminDashboard = () => {
         </div>
         <div className="glass-panel" style={{ padding: '25px', borderLeft: '4px solid #DC143C' }}>
           <h3 style={{ color: 'var(--text-dim)', fontSize: '1.1rem', marginBottom: '10px' }}>Pending Action</h3>
-          <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{pendingBookings}</div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{pendingBookings + pendingCallbacks}</div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
+      <div style={{ display: 'flex', gap: '20px', marginBottom: '30px', flexWrap: 'wrap' }}>
         <button onClick={() => setActiveTab('bookings')} className="glass-button" style={{ background: activeTab === 'bookings' ? 'rgba(255,153,51,0.2)' : '' }}>Manage Bookings</button>
         <button onClick={() => setActiveTab('users')} className="glass-button" style={{ background: activeTab === 'users' ? 'rgba(255,153,51,0.2)' : '' }}>Manage Users</button>
         <button onClick={() => setActiveTab('packages')} className="glass-button" style={{ background: activeTab === 'packages' ? 'rgba(255,153,51,0.2)' : '' }}>Manage Packages</button>
         <button onClick={() => setActiveTab('destinations')} className="glass-button" style={{ background: activeTab === 'destinations' ? 'rgba(255,153,51,0.2)' : '' }}>Manage Destinations</button>
+        <button onClick={() => setActiveTab('callbacks')} className="glass-button" style={{ background: activeTab === 'callbacks' ? 'rgba(255,153,51,0.2)' : '', position: 'relative' }}>
+            Callback Requests
+            {pendingCallbacks > 0 && (
+                <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#DC143C', color: 'white', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                    {pendingCallbacks}
+                </span>
+            )}
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '40px' }}>
@@ -288,6 +299,74 @@ const AdminDashboard = () => {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Callback Requests Section */}
+        {activeTab === 'callbacks' && (
+          <div className="glass-panel" style={{ padding: '30px' }}>
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              Callback Requests
+            </h2>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-dim)' }}>
+                    <th style={{ padding: '15px 10px' }}>Name</th>
+                    <th style={{ padding: '15px 10px' }}>Contact</th>
+                    <th style={{ padding: '15px 10px' }}>Query / Message</th>
+                    <th style={{ padding: '15px 10px' }}>Status</th>
+                    <th style={{ padding: '15px 10px' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(callbackRequests || []).map(req => (
+                    <tr key={req.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <td style={{ padding: '15px 10px', color: 'white' }}>{req.name}</td>
+                      <td style={{ padding: '15px 10px' }}>
+                        <div style={{ color: 'var(--color-saffron)' }}>📞 {req.phone}</div>
+                        {req.email && <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>✉️ {req.email}</div>}
+                      </td>
+                      <td style={{ padding: '15px 10px', color: 'var(--text-dim)', maxWidth: '300px' }}>
+                        {req.query || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>No message provided</span>}
+                      </td>
+                      <td style={{ padding: '15px 10px' }}>
+                        <span style={{ 
+                          padding: '4px 10px', 
+                          borderRadius: '12px', 
+                          fontSize: '0.85rem',
+                          background: req.status === 'Resolved' ? 'rgba(19, 136, 8, 0.2)' : 'rgba(220, 20, 60, 0.2)',
+                          color: req.status === 'Resolved' ? 'var(--color-emerald)' : '#ff6b6b'
+                        }}>
+                          {req.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '15px 10px', display: 'flex', gap: '10px' }}>
+                        {req.status === 'Pending' && (
+                          <button 
+                            onClick={() => updateCallbackStatus(req.id, 'Resolved')}
+                            style={{ background: 'var(--color-emerald)', color: 'white', border: 'none', padding: '5px 12px', borderRadius: '5px', cursor: 'pointer' }}
+                          >
+                            Mark Resolved
+                          </button>
+                        )}
+                        {req.status === 'Resolved' && (
+                          <button 
+                            onClick={() => updateCallbackStatus(req.id, 'Pending')}
+                            style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '5px 12px', borderRadius: '5px', cursor: 'pointer' }}
+                          >
+                            Re-open
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {(!callbackRequests || callbackRequests.length === 0) && (
+                     <tr><td colSpan="5" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-dim)' }}>No callback requests found.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>

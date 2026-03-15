@@ -11,6 +11,7 @@ export const appwriteConfig = {
     packages: "packages",
     bookings: "bookings",
     destinations: "destinations",
+    callback_requests: "callback_requests",
   },
 };
 
