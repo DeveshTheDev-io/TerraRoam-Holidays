@@ -117,37 +117,79 @@ const Hero = () => {
                         width: 'clamp(300px, 40vw, 500px)',
                         height: 'clamp(300px, 40vw, 500px)',
                         borderRadius: '50%',
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        backdropFilter: 'blur(12px)',
-                        border: '1px solid rgba(255,255,255,0.1)',
+                        background: 'rgba(20, 20, 25, 0.4)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255,255,255,0.15)',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 0 0 40px rgba(255,255,255,0.05)',
+                        boxShadow: '0 30px 60px rgba(0,0,0,0.6), inset 0 0 50px rgba(255,255,255,0.05)',
                         position: 'relative'
                     }}
                 >
-                    {/* Spinning Border Dash */}
-                    <svg style={{ position: 'absolute', top: -10, left: -10, width: 'calc(100% + 20px)', height: 'calc(100% + 20px)', animation: 'spin-slow 40s linear infinite' }}>
-                        <circle cx="50%" cy="50%" r="48%" fill="none" stroke="rgba(255,153,51,0.5)" strokeWidth="1" strokeDasharray="10 20" />
-                        <circle cx="50%" cy="50%" r="46%" fill="none" stroke="rgba(19,136,8,0.5)" strokeWidth="1" strokeDasharray="30 40" style={{ animation: 'spin-slow 30s linear infinite reverse', transformOrigin: 'center' }} />
-                    </svg>
+                    {/* 3D Glowing Rings */}
+                    <div style={{
+                        position: 'absolute', top: '-3px', left: '-3px', right: '-3px', bottom: '-3px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(45deg, rgba(255,153,51,0.8), transparent 40%, transparent 60%, rgba(19,136,8,0.8))',
+                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor',
+                        maskComposite: 'exclude',
+                        padding: '3px',
+                        animation: 'spin-slow 15s linear infinite',
+                        boxShadow: '0 0 30px rgba(255,153,51,0.4), inset 0 0 30px rgba(19,136,8,0.4)',
+                        zIndex: -1,
+                        pointerEvents: 'none'
+                    }} />
 
+                    <div style={{
+                        position: 'absolute', top: '-15px', left: '-15px', right: '-15px', bottom: '-15px',
+                        borderRadius: '50%',
+                        border: '1px dashed rgba(255,153,51,0.4)',
+                        animation: 'spin-slow 25s linear infinite reverse',
+                        opacity: 0.6,
+                        pointerEvents: 'none'
+                    }} />
+
+                    <div style={{
+                        position: 'absolute', top: '15px', left: '15px', right: '15px', bottom: '15px',
+                        borderRadius: '50%',
+                        border: '1px dotted rgba(19,136,8,0.4)',
+                        animation: 'spin-slow 10s linear infinite',
+                        opacity: 0.5,
+                        pointerEvents: 'none'
+                    }} />
+
+                    {/* Perfect Logo Badge Container */}
                     {heroLogoUrl && (
-                        <img 
-                            src={heroLogoUrl} 
-                            alt="Hero Logo" 
-                            style={{ 
-                                height: 'clamp(60px, 8vw, 100px)', 
-                                width: 'auto', 
-                                objectFit: 'contain', 
-                                marginBottom: '20px', 
-                                filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))',
-                                position: 'relative',
-                                zIndex: 5
-                            }} 
-                        />
+                        <div style={{
+                            width: 'clamp(100px, 14vw, 150px)',
+                            height: 'clamp(100px, 14vw, 150px)',
+                            background: '#ffffff',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '15px',
+                            boxSizing: 'border-box',
+                            margin: '0 0 25px 0',
+                            boxShadow: '0 15px 35px rgba(0,0,0,0.4), inset 0 0 0 4px rgba(255,153,51,0.2)',
+                            position: 'relative',
+                            zIndex: 5,
+                        }}>
+                            <img 
+                                src={heroLogoUrl} 
+                                alt="Hero Logo" 
+                                style={{ 
+                                    maxWidth: '100%', 
+                                    maxHeight: '100%', 
+                                    objectFit: 'contain', 
+                                    display: 'block',
+                                    borderRadius: '50%'
+                                }} 
+                            />
+                        </div>
                     )}
 
                     <h2 style={{

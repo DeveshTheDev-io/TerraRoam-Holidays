@@ -54,23 +54,23 @@ const CallbackPopup = ({ isOpen, onClose }) => {
               background: 'rgba(0, 0, 0, 0.7)',
               backdropFilter: 'blur(5px)',
               zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 10000,
-              width: '90%',
-              maxWidth: '450px',
-            }}
-            className="glass-panel"
           >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: '90%',
+                maxWidth: '450px',
+                position: 'relative',
+              }}
+              className="glass-panel"
+            >
             <div style={{ position: 'relative', padding: '30px' }}>
               <button
                 onClick={onClose}
@@ -249,6 +249,7 @@ const CallbackPopup = ({ isOpen, onClose }) => {
                 </form>
               )}
             </div>
+            </motion.div>
           </motion.div>
         </>
       )}
