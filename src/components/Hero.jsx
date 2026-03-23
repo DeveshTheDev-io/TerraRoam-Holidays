@@ -114,8 +114,8 @@ const Hero = () => {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
                     style={{
-                        width: 'clamp(300px, 40vw, 500px)',
-                        height: 'clamp(300px, 40vw, 500px)',
+                        width: 'clamp(310px, 90vw, 500px)',
+                        height: 'clamp(310px, 90vw, 500px)',
                         borderRadius: '50%',
                         background: 'rgba(20, 20, 25, 0.4)',
                         backdropFilter: 'blur(20px)',
@@ -164,16 +164,16 @@ const Hero = () => {
                     {/* Perfect Logo Badge Container */}
                     {heroLogoUrl && (
                         <div style={{
-                            width: 'clamp(100px, 14vw, 150px)',
-                            height: 'clamp(100px, 14vw, 150px)',
+                            width: 'clamp(70px, 15vw, 150px)',
+                            height: 'clamp(70px, 15vw, 150px)',
                             background: '#ffffff',
                             borderRadius: '50%',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            padding: '15px',
+                            padding: 'clamp(8px, 2vw, 15px)',
                             boxSizing: 'border-box',
-                            margin: '0 0 25px 0',
+                            margin: '0 0 clamp(10px, 3vh, 25px) 0',
                             boxShadow: '0 15px 35px rgba(0,0,0,0.4), inset 0 0 0 4px rgba(255,153,51,0.2)',
                             position: 'relative',
                             zIndex: 5,
@@ -194,18 +194,18 @@ const Hero = () => {
 
                     <h2 style={{
                         color: 'var(--color-saffron)',
-                        fontSize: 'clamp(1rem, 2vw, 1.5rem)',
+                        fontSize: 'clamp(0.85rem, 2vw, 1.5rem)',
                         fontWeight: '600',
-                        letterSpacing: '5px',
+                        letterSpacing: 'clamp(2px, 1vw, 5px)',
                         textTransform: 'uppercase',
-                        margin: '0 0 10px 0',
+                        margin: '0 0 clamp(5px, 1vh, 10px) 0',
                         textShadow: '0 2px 10px rgba(0,0,0,0.5)'
                     }}>
                         Discover
                     </h2>
                     
                     <h1 style={{
-                        fontSize: 'clamp(2.5rem, 6vw, 5rem)',
+                        fontSize: 'clamp(2rem, 8vw, 5rem)',
                         fontWeight: '700',
                         fontFamily: '"Playfair Display", serif',
                         margin: 0,
@@ -214,19 +214,20 @@ const Hero = () => {
                         WebkitTextFillColor: 'transparent',
                         filter: 'drop-shadow(0px 5px 15px rgba(0,0,0,0.6))',
                         textAlign: 'center',
-                        lineHeight: '1.1'
+                        lineHeight: '1.1',
+                        padding: '0 15px'
                     }}>
                         {displayImages[currentIndex].title || 'TerraRoam'}
                     </h1>
 
-                    <div style={{ height: '2px', width: '60px', background: 'white', margin: '20px 0', opacity: 0.5 }} />
+                    <div style={{ height: '2px', width: 'clamp(40px, 10vw, 60px)', background: 'white', margin: 'clamp(10px, 2vh, 20px) 0', opacity: 0.5 }} />
 
                     <button 
                         className="glass-button" 
                         onClick={() => document.getElementById('destinations')?.scrollIntoView({ behavior: 'smooth' })}
                         style={{ 
-                            padding: '12px 30px', 
-                            fontSize: '1rem', 
+                            padding: 'clamp(8px, 1.5vh, 12px) clamp(20px, 5vw, 30px)', 
+                            fontSize: 'clamp(0.8rem, 1.5vw, 1rem)', 
                             background: 'rgba(255,255,255,0.1)', 
                             borderColor: 'rgba(255,255,255,0.2)',
                             borderRadius: '30px',
