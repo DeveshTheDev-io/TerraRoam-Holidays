@@ -36,6 +36,7 @@ const Navbar = () => {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
         .navbar-content-container {
           display: flex;
           align-items: center;
@@ -126,9 +127,8 @@ const Navbar = () => {
         }}
       >
         <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <img src="/logo.png" alt="TerraRoam Logo" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '1px', color: 'white' }}>
-            TerraRoam <span className="text-gradient">Holidays</span>
+          <div style={{ fontSize: '2rem', fontWeight: 700, fontFamily: '"Playfair Display", serif', letterSpacing: '1px', color: 'white' }}>
+            TerraRoam <span className="text-gradient" style={{ fontStyle: 'italic', fontWeight: 400 }}>Holidays</span>
           </div>
         </Link>
         
@@ -203,6 +203,7 @@ const Navbar = () => {
               <>
                 <Link onClick={() => setIsMobileMenuOpen(false)} to="/#destinations" style={{ color: 'white', textDecoration: 'none', fontWeight: 500, fontSize: '1.1rem', transition: 'color 0.3s' }} className="nav-link">Destinations</Link>
                 <Link onClick={() => setIsMobileMenuOpen(false)} to="/packages" style={{ color: 'white', textDecoration: 'none', fontWeight: 500, fontSize: '1.1rem', transition: 'color 0.3s' }} className="nav-link">Packages</Link>
+                <Link onClick={() => setIsMobileMenuOpen(false)} to="/#blog" style={{ color: 'white', textDecoration: 'none', fontWeight: 500, fontSize: '1.1rem', transition: 'color 0.3s' }} className="nav-link">Blog</Link>
               </>
             )}
             

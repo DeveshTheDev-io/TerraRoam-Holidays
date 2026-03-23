@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import './index.css';
 import Navbar from './components/Navbar';
@@ -10,7 +10,7 @@ import Footer from './components/Footer';
 import AdminDashboard from './components/AdminDashboard';
 import Auth from './pages/Auth';
 import PackagesPage from './pages/PackagesPage';
-import ShaderBanner from './components/ShaderBanner';
+import BlogSection from './components/BlogSection';
 import FloatingPlacesBackground from './components/FloatingPlacesBackground';
 import FAQ from './components/FAQ';
 import WhyChooseUs from './components/WhyChooseUs';
@@ -21,6 +21,22 @@ import CallbackPopup from './components/CallbackPopup';
 
 function App() {
   const [isCallbackOpen, setIsCallbackOpen] = useState(false);
+  const location = useLocation();
+
+  // Smooth scroll to hash anchor on route changes
+  useEffect(() => {
+    if (location.hash) {
+      setTimeout(() => {
+        const id = location.hash.replace('#', '');
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location]);
 
   return (
     <>
@@ -39,10 +55,10 @@ function App() {
                 <div style={{ position: 'relative', overflow: 'hidden' }}>
                   <FloatingPlacesBackground />
                   <div style={{ position: 'relative', zIndex: 1 }}>
-                    <ShaderBanner />
                     <Destinations />
                     <Packages />
                     <WhyChooseUs />
+                    <BlogSection />
                     <FAQ />
                   </div>
                 </div>

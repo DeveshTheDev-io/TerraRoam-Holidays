@@ -37,6 +37,9 @@ export const AppProvider = ({ children }) => {
   const [destinations, setDestinations] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [callbackRequests, setCallbackRequests] = useState([]);
+  const [heroImages, setHeroImages] = useState([]);
+  const [blogs, setBlogs] = useState([]);
+  const [siteSettings, setSiteSettings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Helper to get collection ID
@@ -69,6 +72,26 @@ export const AppProvider = ({ children }) => {
             [Query.orderDesc('$createdAt')]
         ).catch(() => null); // Ignore error if table doesn't exist yet
         if (callbacksResp?.documents) setCallbackRequests(callbacksResp.documents);
+
+        const heroResp = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            getTable('hero_images'),
+            [Query.orderDesc('$createdAt')]
+        ).catch(() => null);
+        if (heroResp?.documents) setHeroImages(heroResp.documents);
+
+        const blogsResp = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            getTable('blogs'),
+            [Query.orderDesc('$createdAt')]
+        ).catch(() => null);
+        if (blogsResp?.documents) setBlogs(blogsResp.documents);
+
+        const settingsResp = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            getTable('site_settings')
+        ).catch(() => null);
+        if (settingsResp?.documents) setSiteSettings(settingsResp.documents);
 
         // Check local storage for persistent login
         const savedUser = localStorage.getItem('terraUser');
@@ -415,6 +438,108 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const addHeroImage = async (data) => {
+    try {
+        const inserted = await databases.createDocument(
+            appwriteConfig.databaseId, 
+            getTable('hero_images'), 
+            ID.unique(), 
+            data
+        );
+        if (inserted) {
+          setHeroImages([inserted, ...heroImages]);
+        }
+    } catch (error) {
+         console.error("Error adding hero image:", error);
+    }
+  };
+
+  const deleteHeroImage = async (id) => {
+    try {
+        await databases.deleteDocument(
+            appwriteConfig.databaseId, 
+            getTable('hero_images'), 
+            id
+        );
+        setHeroImages(heroImages.filter(h => h.$id !== id && h.id !== id));
+    } catch (error) {
+         console.error("Error deleting hero image:", error);
+    }
+  };
+
+  // Blog Functions
+  const addBlog = async (data) => {
+    try {
+        const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const inserted = await databases.createDocument(
+            appwriteConfig.databaseId, 
+            getTable('blogs'), 
+            ID.unique(), 
+            { ...data, date }
+        );
+        if (inserted) {
+          setBlogs([inserted, ...blogs]);
+        }
+    } catch (error) {
+         console.error("Error adding blog:", error);
+    }
+  };
+
+  const updateBlog = async (id, updatedData) => {
+    try {
+        await databases.updateDocument(
+            appwriteConfig.databaseId, 
+            getTable('blogs'), 
+            id, 
+            updatedData
+        );
+        setBlogs(blogs.map(b => (b.$id === id || b.id === id) ? { ...b, ...updatedData } : b));
+    } catch (error) {
+         console.error("Error updating blog:", error);
+    }
+  };
+
+  const deleteBlog = async (id) => {
+    try {
+        await databases.deleteDocument(
+            appwriteConfig.databaseId, 
+            getTable('blogs'), 
+            id
+        );
+        setBlogs(blogs.filter(b => b.$id !== id && b.id !== id));
+    } catch (error) {
+         console.error("Error deleting blog:", error);
+    }
+  };
+
+  // Site Settings Functions
+  const upsertSiteSetting = async (name, value) => {
+    try {
+        const existing = siteSettings.find(s => s.setting_name === name);
+        if (existing) {
+            await databases.updateDocument(
+                appwriteConfig.databaseId,
+                getTable('site_settings'),
+                existing.$id || existing.id,
+                { setting_value: value }
+            );
+            setSiteSettings(siteSettings.map(s => (s.$id === existing.$id || s.id === existing.id) ? { ...s, setting_value: value } : s));
+        } else {
+            const inserted = await databases.createDocument(
+                appwriteConfig.databaseId,
+                getTable('site_settings'),
+                ID.unique(),
+                { setting_name: name, setting_value: value }
+            );
+            if (inserted) {
+                setSiteSettings([...siteSettings, inserted]);
+            }
+        }
+    } catch (error) {
+        console.error("Error upserting site setting:", error);
+    }
+  };
+
   // Callback Functions
   const createCallbackRequest = async (requestData) => {
     try {
@@ -457,9 +582,15 @@ export const AppProvider = ({ children }) => {
       normalizedBookings: bookings.map(b => ({ ...b, id: b.$id || b.id })),
       normalizedCallbackRequests: callbackRequests.map(c => ({ ...c, id: c.$id || c.id })),
       normalizedCurrentUser: currentUser ? { ...currentUser, id: currentUser.$id || currentUser.id } : null,
+      heroImages: heroImages.map(h => ({ ...h, id: h.$id || h.id })),
+      blogs,
+      normalizedBlogs: blogs.map(b => ({ ...b, id: b.$id || b.id })),
+      siteSettings: siteSettings.map(s => ({ ...s, id: s.$id || s.id })),
+      upsertSiteSetting,
       login, signup, logout, createBooking, 
       updateBookingStatus, addPackage, updatePackage, deletePackage, toggleFeaturedPackage,
-      addDestination, updateDestination, deleteDestination, createCallbackRequest, updateCallbackStatus
+      addDestination, updateDestination, deleteDestination, createCallbackRequest, updateCallbackStatus,
+      addHeroImage, deleteHeroImage, addBlog, updateBlog, deleteBlog
     }}>
       {children}
     </AppContext.Provider>

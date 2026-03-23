@@ -12,6 +12,9 @@ export const appwriteConfig = {
     bookings: "bookings",
     destinations: "destinations",
     callback_requests: "callback_requests",
+    hero_images: "hero_images",
+    blogs: "blogs",
+    site_settings: "site_settings",
   },
 };
 
