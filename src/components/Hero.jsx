@@ -83,7 +83,8 @@ const Hero = () => {
                 background: 'radial-gradient(circle, rgba(255, 153, 51, 0.15) 0%, transparent 60%)',
                 filter: 'blur(80px)',
                 zIndex: 2,
-                animation: 'pulse-slow 8s infinite alternate'
+                animation: 'pulse-slow 8s infinite alternate',
+                willChange: 'transform, opacity'
             }} />
             <div style={{
                 position: 'absolute',
@@ -92,7 +93,8 @@ const Hero = () => {
                 background: 'radial-gradient(circle, rgba(19, 136, 8, 0.15) 0%, transparent 60%)',
                 filter: 'blur(80px)',
                 zIndex: 2,
-                animation: 'pulse-slow 10s infinite alternate-reverse'
+                animation: 'pulse-slow 10s infinite alternate-reverse',
+                willChange: 'transform, opacity'
             }} />
 
             {/* Central Circular Design Element */}
@@ -140,7 +142,8 @@ const Hero = () => {
                         animation: 'spin-slow 15s linear infinite',
                         boxShadow: '0 0 30px rgba(255,153,51,0.4), inset 0 0 30px rgba(19,136,8,0.4)',
                         zIndex: -1,
-                        pointerEvents: 'none'
+                        pointerEvents: 'none',
+                        willChange: 'transform'
                     }} />
 
                     <div style={{
@@ -149,7 +152,8 @@ const Hero = () => {
                         border: '1px dashed rgba(255,153,51,0.4)',
                         animation: 'spin-slow 25s linear infinite reverse',
                         opacity: 0.6,
-                        pointerEvents: 'none'
+                        pointerEvents: 'none',
+                        willChange: 'transform'
                     }} />
 
                     <div style={{
@@ -158,7 +162,8 @@ const Hero = () => {
                         border: '1px dotted rgba(19,136,8,0.4)',
                         animation: 'spin-slow 10s linear infinite',
                         opacity: 0.5,
-                        pointerEvents: 'none'
+                        pointerEvents: 'none',
+                        willChange: 'transform'
                     }} />
 
                     {/* Perfect Logo Badge Container */}

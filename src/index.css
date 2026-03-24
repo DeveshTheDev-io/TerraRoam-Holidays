@@ -48,6 +48,7 @@ body {
   border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
   animation: blob-spin 25s infinite linear;
   filter: blur(80px);
+  will-change: transform, opacity;
 }
 
 .fluid-bg::before {
@@ -89,6 +90,7 @@ body {
   );
   animation: blob-spin 20s infinite linear reverse;
   filter: blur(100px);
+  will-change: transform, opacity;
 }
 
 @keyframes blob-spin {
@@ -204,6 +206,7 @@ h6 {
   animation-name: float-drift;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
+  will-change: transform;
 }
 
 @keyframes float-drift {

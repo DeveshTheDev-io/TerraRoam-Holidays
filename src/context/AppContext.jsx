@@ -49,48 +49,24 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const usersResp = await databases.listDocuments(appwriteConfig.databaseId, getTable('profiles'));
+        const fetchUsers = databases.listDocuments(appwriteConfig.databaseId, getTable('profiles')).catch(() => null);
+        const fetchPackages = databases.listDocuments(appwriteConfig.databaseId, getTable('packages'), [Query.orderDesc('$createdAt')]).catch(() => null);
+        const fetchBookings = databases.listDocuments(appwriteConfig.databaseId, getTable('bookings'), [Query.orderDesc('$createdAt')]).catch(() => null);
+        const fetchCallbacks = databases.listDocuments(appwriteConfig.databaseId, getTable('callback_requests'), [Query.orderDesc('$createdAt')]).catch(() => null);
+        const fetchHero = databases.listDocuments(appwriteConfig.databaseId, getTable('hero_images'), [Query.orderDesc('$createdAt')]).catch(() => null);
+        const fetchBlogs = databases.listDocuments(appwriteConfig.databaseId, getTable('blogs'), [Query.orderDesc('$createdAt')]).catch(() => null);
+        const fetchSettings = databases.listDocuments(appwriteConfig.databaseId, getTable('site_settings')).catch(() => null);
+
+        const [usersResp, packagesResp, bookingsResp, callbacksResp, heroResp, blogsResp, settingsResp] = await Promise.all([
+          fetchUsers, fetchPackages, fetchBookings, fetchCallbacks, fetchHero, fetchBlogs, fetchSettings
+        ]);
+
         if (usersResp?.documents) setUsers(usersResp.documents);
-
-        const packagesResp = await databases.listDocuments(
-            appwriteConfig.databaseId, 
-            getTable('packages'),
-            [Query.orderDesc('$createdAt')]
-        );
         if (packagesResp?.documents) setPackages(packagesResp.documents);
-
-        const bookingsResp = await databases.listDocuments(
-            appwriteConfig.databaseId, 
-            getTable('bookings'),
-            [Query.orderDesc('$createdAt')]
-        );
         if (bookingsResp?.documents) setBookings(bookingsResp.documents);
-
-        const callbacksResp = await databases.listDocuments(
-            appwriteConfig.databaseId,
-            getTable('callback_requests'),
-            [Query.orderDesc('$createdAt')]
-        ).catch(() => null); // Ignore error if table doesn't exist yet
         if (callbacksResp?.documents) setCallbackRequests(callbacksResp.documents);
-
-        const heroResp = await databases.listDocuments(
-            appwriteConfig.databaseId,
-            getTable('hero_images'),
-            [Query.orderDesc('$createdAt')]
-        ).catch(() => null);
         if (heroResp?.documents) setHeroImages(heroResp.documents);
-
-        const blogsResp = await databases.listDocuments(
-            appwriteConfig.databaseId,
-            getTable('blogs'),
-            [Query.orderDesc('$createdAt')]
-        ).catch(() => null);
         if (blogsResp?.documents) setBlogs(blogsResp.documents);
-
-        const settingsResp = await databases.listDocuments(
-            appwriteConfig.databaseId,
-            getTable('site_settings')
-        ).catch(() => null);
         if (settingsResp?.documents) setSiteSettings(settingsResp.documents);
 
         // Check local storage for persistent login
