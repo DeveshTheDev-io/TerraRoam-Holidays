@@ -171,20 +171,22 @@ const Hero = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            padding: 'clamp(8px, 2vw, 15px)',
+                            padding: '0',
                             boxSizing: 'border-box',
                             margin: '0 0 clamp(10px, 3vh, 25px) 0',
                             boxShadow: '0 15px 35px rgba(0,0,0,0.4), inset 0 0 0 4px rgba(255,153,51,0.2)',
                             position: 'relative',
                             zIndex: 5,
+                            overflow: 'hidden'
                         }}>
                             <img 
                                 src={heroLogoUrl} 
                                 alt="Hero Logo" 
                                 style={{ 
-                                    maxWidth: '100%', 
-                                    maxHeight: '100%', 
-                                    objectFit: 'contain', 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    objectFit: 'cover',
+                                    transform: 'scale(1.2)',
                                     display: 'block',
                                     borderRadius: '50%'
                                 }} 
