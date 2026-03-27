@@ -20,7 +20,7 @@ const AdminDashboard = () => {
       heroImages,
       addHeroImage,
       deleteHeroImage,
-      blogs,
+      normalizedBlogs: blogs,
       addBlog,
       updateBlog,
       deleteBlog,
